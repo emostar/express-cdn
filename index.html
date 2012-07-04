@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="Express-cdn : Node.js module for delivering optimized, minified, mangled, gzipped, and CDN-hosted assets in Express using S3 and CloudFront." />
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Express-cdn</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/niftylettuce/express-cdn">View on GitHub</a>
+
+          <h1 id="project_title">Express-cdn</h1>
+          <h2 id="project_tagline">Node.js module for delivering optimized, minified, mangled, gzipped, and CDN-hosted assets in Express using S3 and CloudFront.</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/niftylettuce/express-cdn/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/niftylettuce/express-cdn/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>express-cdn <sup>0.0.1</sup>
+</h1>
+
+<p>Node.js module for delivering optimized, minified, mangled, gzipped, and CDN-hosted assets in Express using S3 and CloudFront.</p>
+
+<p>Follow <a href="http://twitter.com/niftylettuce" target="_blank">@niftylettuce</a> on Twitter for updates.</p>
+
+<p>Currently supports <code>express</code> version 2.x (not 3.x compatible yet).</p>
+
+<p>Like this module?  You should also check out <a href="https://github.com/niftylettuce/node-email-templates" target="_blank">node-email-templates</a>!</p>
+
+<h2>Features</h2>
+
+<ul>
+<li>Built-in optimization of images in production mode using <a href="http://optipng.sourceforge.net/">OptiPNG</a> and <a href="http://jpegclub.org/jpegtran/">JPEGTran</a>.</li>
+<li>Supports <a href="http://sass-lang.com/">Sass</a>, <a href="http://lesscss.org/">LESS</a>, and <a href="http://learnboost.github.com/stylus/">Stylus</a> using respective stylesheet compilers.</li>
+<li>JavaScript assets are mangled and minified using <a href="https://github.com/mishoo/UglifyJS/">UglifyJS</a>.</li>
+<li>Automatic detection of asset changes and will only upload changed assets to S3 in production mode.</li>
+<li>Utilizes cachebusting, which is inspired by <a href="https://github.com/niftylettuce/express-cachebuster/">express-cachebuster</a> and <a href="http://h5bp.com/">h5bp</a>.</li>
+<li>All assets are compressed using <a href="http://nodejs.org/api/zlib.html">zlib</a> into a gzip buffer for S3 uploading with <code>Content-Encoding</code> header set to <code>gzip</code>.</li>
+<li>Embed multiple assets as a single <code>&lt;script&gt;</code> or <code>&lt;link&gt;</code> tag using the built-in dynamic view helper.</li>
+<li>Loads and processes assets per view (allowing you to minimize client HTTP requests).</li>
+<li>Combine commonly used assets together using a simple array argument.</li>
+<li>Uploads changed assets automatically and asynchronously to Amazon S3 (only in production mode) using <a href="https://github.com/LearnBoost/knox/">knox</a>.</li>
+</ul><h2>Lazy Web Requests</h2>
+
+<ul>
+<li>Automatic parsing of <code>CDN(...)</code> in stylesheets and scripts.</li>
+<li>Modularization of <code>/lib/main.js</code> please!</li>
+<li>Support Express 3.x.x+ and utilize async with view helper.</li>
+<li>Convert from <code>fs.statSync</code> to <code>fs.stat</code> with callback for image assets modified timestamp hack.</li>
+<li>Investigate why Chrome Tools Audit returns leverage proxy cookieless jargon.</li>
+</ul><h2>How does it work?</h2>
+
+<p>When the server is first started, the module returns a view helper depending on
+the server environment (production or development).  It also recursively
+searches through your <code>viewsDir</code> for any views containing instances of the
+<code>CDN(...)</code> view helper.  After parsing each instance and removing duplicates,
+it will use your S3 credentials to upload a new copy of the production-quality
+assets.  Enjoy <strong>:)</strong>.</p>
+
+<h2>Environment Differences</h2>
+
+<p><strong>Development Mode:</strong></p>
+
+<p>Assets are untouched, cachebusted, and delivered as typical local files for rapid development.</p>
+
+<p><strong>Production Mode:</strong></p>
+
+<p>Assets are optimized, minified, mangled, gzipped, delivered by Amazon CloudFront CDN, and hosted from Amazon S3.</p>
+
+<h2>CDN Setup Instructions</h2>
+
+<ol>
+<li>Visit <a href="https://console.aws.amazon.com/s3/home">https://console.aws.amazon.com/s3/home</a> and click <strong>Create Bucket</strong>.
+
+<ul>
+<li>Bucket Name: <code>bucket-name</code>
+</li>
+<li>Region: <code>US Standard</code>
+</li>
+</ul>
+</li>
+<li>Upload <a href="https://raw.github.com/niftylettuce/express-cdn/master/index.html">index.html</a> to your new bucket (this will serve as a placeholder in case someone accesses <a href="http://cdn.your-site.com/">http://cdn.your-site.com/</a>).</li>
+<li>Select <code>index.html</code> in the Objects and Folders view from your S3 console and click <strong>Actions → Make Public</strong>.</li>
+<li>Visit <a href="https://console.aws.amazon.com/cloudfront/home">https://console.aws.amazon.com/cloudfront/home</a> and click <strong>Create Distribution</strong>.
+
+<ul>
+<li>Choose an origin:
+
+<ul>
+<li>Origin Domain Name: <code>bucket-name.s3.amazonaws.com</code>
+</li>
+<li>Origin ID: <code>S3-bucket-name</code>
+</li>
+</ul>
+</li>
+<li>Create default behavior:
+
+<ul>
+<li>Path Pattern: <code>Default (*)</code>
+</li>
+<li>Origin: <code>S3-bucket-name</code>
+</li>
+<li>Viewer Protocol Policy: <code>HTTP and HTTPS</code>
+</li>
+<li>Object Caching: <code>Use Origin Cache Headers</code>
+</li>
+<li>Forward Query String: <code>No (Improves Caching)</code>
+</li>
+</ul>
+</li>
+<li>Distribution details:
+
+<ul>
+<li>Alternate Domain Names (CNAMEs): <code>cdn.your-domain.com</code>
+</li>
+<li>Default Root Object: <code>index.html</code>
+</li>
+<li>Logging: <code>Off</code>
+</li>
+<li>Comments: <code>Created with express-cdn by @niftylettuce.</code>
+</li>
+<li>Distribution State: <code>Enabled</code>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Copy the generated Domain Name (e.g. <code>xyz.cloudfront.net</code>) to your clipboard.</li>
+<li>Log in to your-domain.com's DNS manager, add a new CNAME "hostname" of <code>cdn</code>, and paste the contents of your clipboard as the the "alias" or "points to" value.</li>
+<li>After the DNS change propagates, you can test your new CDN by visiting <a href="http://cdn.your-domain.com">http://cdn.your-domain.com</a> (the <code>index.html</code> file should get displayed).</li>
+</ol><h2>Installation</h2>
+
+<div class="highlight">
+<pre><span class="c"># install optipng and jpegtran packages</span>
+sudo apt-get install optipng libjpeg-progs
+
+<span class="c"># install express-cdn module</span>
+npm install express-cdn
+</pre>
+</div>
+
+
+<h2>Usage</h2>
+
+<h3>Server</h3>
+
+<div class="highlight">
+<pre><span class="c1">// # express-cdn</span>
+
+<span class="kd">var</span> <span class="nx">express</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'express'</span><span class="p">)</span>
+  <span class="p">,</span> <span class="nx">path</span>    <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'path'</span><span class="p">)</span>
+  <span class="p">,</span> <span class="nx">app</span>     <span class="o">=</span> <span class="nx">express</span><span class="p">.</span><span class="nx">createServer</span><span class="p">();</span>
+
+<span class="c1">// Set the CDN options</span>
+<span class="kd">var</span> <span class="nx">options</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="nx">publicDir</span>  <span class="o">:</span> <span class="nx">path</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="nx">__dirname</span><span class="p">,</span> <span class="s1">'public'</span><span class="p">)</span>
+  <span class="p">,</span> <span class="nx">viewsDir</span>   <span class="o">:</span> <span class="nx">path</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="nx">__dirname</span><span class="p">,</span> <span class="s1">'views'</span><span class="p">)</span>
+  <span class="p">,</span> <span class="nx">domain</span>     <span class="o">:</span> <span class="s1">'cdn.your-domain.com'</span>
+  <span class="p">,</span> <span class="nx">bucket</span>     <span class="o">:</span> <span class="s1">'bucket-name'</span>
+  <span class="p">,</span> <span class="nx">key</span>        <span class="o">:</span> <span class="s1">'amazon-s3-key'</span>
+  <span class="p">,</span> <span class="nx">secret</span>     <span class="o">:</span> <span class="s1">'amazon-s3-secret'</span>
+  <span class="p">,</span> <span class="nx">hostname</span>   <span class="o">:</span> <span class="s1">'localhost'</span>
+  <span class="p">,</span> <span class="nx">port</span>       <span class="o">:</span> <span class="mi">1337</span>
+  <span class="p">,</span> <span class="nx">ssl</span>        <span class="o">:</span> <span class="kc">false</span>
+  <span class="p">,</span> <span class="nx">production</span> <span class="o">:</span> <span class="kc">true</span>
+<span class="p">};</span>
+
+<span class="c1">// Initialize the CDN magic</span>
+<span class="kd">var</span> <span class="nx">CDN</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'express-cdn'</span><span class="p">)(</span><span class="nx">app</span><span class="p">,</span> <span class="nx">options</span><span class="p">);</span>
+
+<span class="nx">app</span><span class="p">.</span><span class="nx">configure</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+  <span class="nx">app</span><span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="s1">'view engine'</span><span class="p">,</span> <span class="s1">'jade'</span><span class="p">);</span>
+  <span class="nx">app</span><span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="s1">'view options'</span><span class="p">,</span> <span class="p">{</span> <span class="nx">layout</span><span class="o">:</span> <span class="kc">false</span><span class="p">,</span> <span class="nx">pretty</span><span class="o">:</span> <span class="kc">true</span> <span class="p">});</span>
+  <span class="nx">app</span><span class="p">.</span><span class="nx">enable</span><span class="p">(</span><span class="s1">'view cache'</span><span class="p">);</span>
+  <span class="nx">app</span><span class="p">.</span><span class="nx">use</span><span class="p">(</span><span class="nx">express</span><span class="p">.</span><span class="nx">bodyParser</span><span class="p">());</span>
+  <span class="nx">app</span><span class="p">.</span><span class="nx">use</span><span class="p">(</span><span class="nx">express</span><span class="p">.</span><span class="kr">static</span><span class="p">(</span><span class="nx">path</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="nx">__dirname</span><span class="p">,</span> <span class="s1">'public'</span><span class="p">)));</span>
+<span class="p">});</span>
+
+<span class="c1">// Add the dynamic view helper</span>
+<span class="nx">app</span><span class="p">.</span><span class="nx">dynamicHelpers</span><span class="p">({</span> <span class="nx">CDN</span><span class="o">:</span> <span class="nx">CDN</span> <span class="p">});</span>
+
+<span class="nx">app</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">'/'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">,</span> <span class="nx">next</span><span class="p">)</span> <span class="p">{</span>
+  <span class="nx">res</span><span class="p">.</span><span class="nx">render</span><span class="p">(</span><span class="s1">'basic'</span><span class="p">);</span>
+  <span class="k">return</span><span class="p">;</span>
+<span class="p">});</span>
+
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"Server started: http://localhost:1337"</span><span class="p">);</span>
+<span class="nx">app</span><span class="p">.</span><span class="nx">listen</span><span class="p">(</span><span class="mi">1337</span><span class="p">);</span>
+</pre>
+</div>
+
+
+<h3>View Engine</h3>
+
+<h4>Jade</h4>
+
+<div class="highlight">
+<pre><span class="c">// #1 - Load an image</span>
+<span class="err">!= </span><span class="nt">CDN</span>(<span class="err">'/</span><span class="na">img</span><span class="err">/</span><span class="na">sprite</span><span class="err">.</span><span class="na">png</span><span class="err">'</span>)
+
+<span class="c">// #2 - Load an image with a custom tag attribute</span>
+<span class="err">!= </span><span class="nt">CDN</span>(<span class="err">'/</span><span class="na">img</span><span class="err">/</span><span class="na">sprite</span><span class="err">.</span><span class="na">png</span><span class="err">',</span> <span class="err">{</span> <span class="na">alt:</span> <span class="err">'</span><span class="na">Sprite</span><span class="err">'</span> <span class="err">}</span>)
+
+<span class="c">// #3 - Load a script</span>
+<span class="err">!= </span><span class="nt">CDN</span>(<span class="err">'/</span><span class="na">js</span><span class="err">/</span><span class="na">script</span><span class="err">.</span><span class="na">js</span><span class="err">'</span>)
+
+<span class="c">// #4 - Load a script with a custom tag attribute</span>
+<span class="err">!= </span><span class="nt">CDN</span>(<span class="err">'/</span><span class="na">js</span><span class="err">/</span><span class="na">script</span><span class="err">.</span><span class="na">js</span><span class="err">',</span> <span class="err">{</span> <span class="err">'</span><span class="na">data-message</span><span class="err">'</span><span class="na">:</span> <span class="err">'</span><span class="na">Hello</span><span class="err">'</span> <span class="err">}</span>)
+
+<span class="c">// #5 - Load and concat two scripts</span>
+<span class="err">!= </span><span class="nt">CDN</span>(<span class="err">[</span> <span class="err">'/</span><span class="na">js</span><span class="err">/</span><span class="na">plugins</span><span class="err">.</span><span class="na">js</span><span class="err">',</span> <span class="err">'/</span><span class="na">js</span><span class="err">/</span><span class="na">script</span><span class="err">.</span><span class="na">js</span><span class="err">'</span> <span class="err">]</span>)
+
+<span class="c">// #6 - Load and concat two scripts with custom tag attributes</span>
+<span class="err">!= </span><span class="nt">CDN</span>(<span class="err">[</span> <span class="err">'/</span><span class="na">js</span><span class="err">/</span><span class="na">plugins</span><span class="err">.</span><span class="na">js</span><span class="err">',</span> <span class="err">'/</span><span class="na">js</span><span class="err">/</span><span class="na">script</span><span class="err">.</span><span class="na">js</span><span class="err">'</span> <span class="err">],</span> <span class="err">{</span> <span class="err">'</span><span class="na">data-message</span><span class="err">'</span><span class="na">:</span> <span class="err">'</span><span class="na">Hello</span><span class="err">'</span> <span class="err">}</span>)
+
+<span class="c">// #7 - Load a stylesheet</span>
+<span class="err">!= </span><span class="nt">CDN</span>(<span class="err">'/</span><span class="na">css</span><span class="err">/</span><span class="na">style</span><span class="err">.</span><span class="na">css</span><span class="err">'</span>)
+
+<span class="c">// #8 - Load and concat two stylesheets</span>
+<span class="err">!= </span><span class="nt">CDN</span>(<span class="err">[</span> <span class="err">'/</span><span class="na">css</span><span class="err">/</span><span class="na">style</span><span class="err">.</span><span class="na">css</span><span class="err">',</span> <span class="err">'/</span><span class="na">css</span><span class="err">/</span><span class="na">extra</span><span class="err">.</span><span class="na">css</span><span class="err">'</span> <span class="err">]</span>)
+</pre>
+</div>
+
+
+<h4>EJS</h4>
+
+<pre lang="ejs"><code>&lt;!-- #1 - Load an image --&gt;
+&lt;%- CDN('/img/sprite.png') %&gt;
+
+&lt;!-- #2 - Load an image with a custom tag attribute --&gt;
+&lt;%- CDN('/img/sprite.png', { alt: 'Sprite' }) %&gt;
+
+&lt;!-- #3 - Load a script --&gt;
+&lt;%- CDN('/js/script.js') %&gt;
+
+&lt;!-- #4 - Load a script with a custom tag attribute --&gt;
+&lt;%- CDN('/js/script.js', { 'data-message': 'Hello' }) %&gt;
+
+&lt;!-- #5 - Load and concat two scripts --&gt;
+&lt;%- CDN([ '/js/plugins.js', '/js/script.js' ]) %&gt;
+
+&lt;!-- #6 - Load and concat two scripts with custom tag attributes --&gt;
+&lt;%- CDN([ '/js/plugins.js', '/js/script.js' ], { 'data-message': 'Hello' }) %&gt;
+
+&lt;!-- #7 - Load a stylesheet --&gt;
+&lt;%- CDN('/css/style.css') %&gt;
+
+&lt;!-- #8 - Load and concat two stylesheets --&gt;
+&lt;%- CDN([ '/css/style.css', '/css/extra.css' ]) %&gt;
+</code></pre>
+
+<h3>Automatically Rendered HTML</h3>
+
+<h4>Development Mode</h4>
+
+<div class="highlight">
+<pre><span class="c">&lt;!-- #1 - Load an image --&gt;</span>
+<span class="nt">&lt;img</span> <span class="na">src=</span><span class="s">"/img/sprite.png?v=1341214029"</span> <span class="nt">/&gt;</span>
+
+<span class="c">&lt;!-- #2 - Load an image with a custom tag attribute --&gt;</span>
+<span class="nt">&lt;img</span> <span class="na">src=</span><span class="s">"/img/sprite.png?v=1341214029"</span> <span class="na">alt=</span><span class="s">"Sprite"</span> <span class="nt">/&gt;</span>
+
+<span class="c">&lt;!-- #3 - Load a script --&gt;</span>
+<span class="nt">&lt;script </span><span class="na">src=</span><span class="s">"/js/script.js?v=1341214029"</span> <span class="na">type=</span><span class="s">"text/javascript"</span><span class="nt">&gt;&lt;/script&gt;</span>
+
+<span class="c">&lt;!-- #4 - Load a script with a custom tag attribute --&gt;</span>
+<span class="nt">&lt;script </span><span class="na">src=</span><span class="s">"/js/script.js?v=1341214029"</span> <span class="na">type=</span><span class="s">"text/javascript"</span> <span class="na">data-message=</span><span class="s">"Hello"</span><span class="nt">&gt;&lt;/script&gt;</span>
+
+<span class="c">&lt;!-- #5 - Load and concat two scripts --&gt;</span>
+<span class="nt">&lt;script </span><span class="na">src=</span><span class="s">"/js/plugins.js?v=1341214029"</span> <span class="na">type=</span><span class="s">"text/javascript"</span><span class="nt">&gt;&lt;/script&gt;</span>
+<span class="nt">&lt;script </span><span class="na">src=</span><span class="s">"/js/script.js?v=1341214029"</span> <span class="na">type=</span><span class="s">"text/javascript"</span><span class="nt">&gt;&lt;/script&gt;</span>
+
+<span class="c">&lt;!-- #6 - Load and concat two scripts with custom tag attributes --&gt;</span>
+<span class="nt">&lt;script </span><span class="na">src=</span><span class="s">"/js/plugins.js?v=1341214029"</span> <span class="na">type=</span><span class="s">"text/javascript"</span> <span class="na">data-message=</span><span class="s">"Hello"</span><span class="nt">&gt;&lt;/script&gt;</span>
+<span class="nt">&lt;script </span><span class="na">src=</span><span class="s">"/js/script.js?v=1341214029"</span> <span class="na">type=</span><span class="s">"text/javascript"</span> <span class="na">data-message=</span><span class="s">"Hello"</span><span class="nt">&gt;&lt;/script&gt;</span>
+
+<span class="c">&lt;!-- #7 - Load a stylesheet --&gt;</span>
+<span class="nt">&lt;link</span> <span class="na">href=</span><span class="s">"/css/style.css?v=1341214029"</span> <span class="na">rel=</span><span class="s">"stylesheet"</span> <span class="na">type=</span><span class="s">"text/css"</span> <span class="nt">/&gt;</span>
+
+<span class="c">&lt;!-- #8 - Load and concat two stylesheets --&gt;</span>
+<span class="nt">&lt;link</span> <span class="na">href=</span><span class="s">"/css/style.css?v=1341214029"</span> <span class="na">rel=</span><span class="s">"stylesheet"</span> <span class="na">type=</span><span class="s">"text/css"</span> <span class="nt">/&gt;</span>
+<span class="nt">&lt;link</span> <span class="na">href=</span><span class="s">"/css/extra.css?v=1341214029"</span> <span class="na">rel=</span><span class="s">"stylesheet"</span> <span class="na">type=</span><span class="s">"text/css"</span> <span class="nt">/&gt;</span>
+</pre>
+</div>
+
+
+<h4>Production Mode</h4>
+
+<p>The protocol will automatically change to "https" or "http" depending on the SSL option.</p>
+
+<p>The module will automatically upload and detect new/modified assets based off timestamp,
+as it utilizes the timestamp for version control!  There is built-in magic to detect if
+individual assets were changed when concatenating multiple assets together (it adds the
+timestamps together and checks if the combined asset timestamp on S3 exists!).</p>
+
+<div class="highlight">
+<pre><span class="c">&lt;!-- #1 - Load an image --&gt;</span>
+<span class="nt">&lt;img</span> <span class="na">src=</span><span class="s">"https://cdn.your-site.com/img/sprite.1341382571.png"</span> <span class="nt">/&gt;</span>
+
+<span class="c">&lt;!-- #2 - Load an image with a custom tag attribute --&gt;</span>
+<span class="nt">&lt;img</span> <span class="na">src=</span><span class="s">"https://cdn.your-site.com/img/sprite.1341382571.png"</span> <span class="na">alt=</span><span class="s">"Sprite"</span> <span class="nt">/&gt;</span>
+
+<span class="c">&lt;!-- #3 - Load a script --&gt;</span>
+<span class="nt">&lt;script </span><span class="na">src=</span><span class="s">"https://cdn.your-site.com/js/script.1341382571.js"</span> <span class="na">type=</span><span class="s">"text/javascript"</span><span class="nt">&gt;&lt;/script&gt;</span>
+
+<span class="c">&lt;!-- #4 - Load a script with a custom tag attribute --&gt;</span>
+<span class="nt">&lt;script </span><span class="na">src=</span><span class="s">"https://cdn.your-site.com/js/script.1341382571.js"</span> <span class="na">type=</span><span class="s">"text/javascript"</span> <span class="na">data-message=</span><span class="s">"Hello"</span><span class="nt">&gt;&lt;/script&gt;</span>
+
+<span class="c">&lt;!-- #5 - Load and concat two scripts --&gt;</span>
+<span class="nt">&lt;script </span><span class="na">src=</span><span class="s">"https://cdn.your-site.com/plugins%2Bscript.1341382571.js"</span> <span class="na">type=</span><span class="s">"text/javascript"</span><span class="nt">&gt;&lt;/script&gt;</span>
+
+<span class="c">&lt;!-- #6 - Load and concat two scripts with custom tag attributes --&gt;</span>
+<span class="nt">&lt;script </span><span class="na">src=</span><span class="s">"https://cdn.your-site.com/plugins%2Bscript.1341382571.js"</span> <span class="na">type=</span><span class="s">"text/javascript"</span> <span class="na">data-message=</span><span class="s">"Hello"</span><span class="nt">&gt;&lt;/script&gt;</span>
+
+<span class="c">&lt;!-- #7 - Load a stylesheet --&gt;</span>
+<span class="nt">&lt;link</span> <span class="na">href=</span><span class="s">"https://cdn.your-site.com/css/style.1341382571.css"</span> <span class="na">rel=</span><span class="s">"stylesheet"</span> <span class="na">type=</span><span class="s">"text/css"</span> <span class="nt">/&gt;</span>
+
+<span class="c">&lt;!-- #8 - Load and concat two stylesheets --&gt;</span>
+<span class="nt">&lt;link</span> <span class="na">href=</span><span class="s">"https://cdn.your-site.com/style%2Bextra.1341382571.css"</span> <span class="na">rel=</span><span class="s">"stylesheet"</span> <span class="na">type=</span><span class="s">"text/css"</span> <span class="nt">/&gt;</span>
+</pre>
+</div>
+
+
+<h2>Contributors</h2>
+
+<ul>
+<li>Nick Baugh <a href="mailto:niftylettuce@gmail.com">niftylettuce@gmail.com</a>
+</li>
+</ul><h2>License</h2>
+
+<p>MIT Licensed</p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Express-cdn maintained by <a href="https://github.com/niftylettuce">niftylettuce</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+              <script type="text/javascript">
+            var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+            document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+          </script>
+          <script type="text/javascript">
+            try {
+              var pageTracker = _gat._getTracker("UA-33131011-1");
+            pageTracker._trackPageview();
+            } catch(err) {}
+          </script>
+
+
+  </body>
+</html>
